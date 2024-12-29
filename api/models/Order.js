@@ -24,10 +24,10 @@ const orderSchema = new mongoose.Schema(
         },
         paymentMethod: { type: String, required: true, default: "Paypal" },
         paymentResult: {
+            ///id is  payment from paypal or stripe
             id: { type: String },
             status: { type: String },
             updated_time: { type: String },
-            email_address: { type: String },
         },
         taxPrice: {
             type: Number,
