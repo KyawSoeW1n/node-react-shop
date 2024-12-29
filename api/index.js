@@ -9,6 +9,7 @@ const userRoute = require("./routes/User");
 
 const dotenv = require('dotenv');
 const productRoute = require('./routes/Product');
+const orderRoute = require('./routes/Order');
 
 
 
@@ -27,12 +28,8 @@ app.use(express.json())
 app.use('/api/seed', dbSeeder);
 app.use("/api/user", userRoute);
 app.use("/api/product", productRoute);
+app.use("/api/order", orderRoute);
 
-
-app.get('/api/product/:id', (req, res) => {
-    const data = product.find((p) => p.id === parseInt(req.params.id));
-    res.json(data);
-});
 app.listen(PORT || 9000, () => {
-    console.log(`Server is running onn port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
