@@ -1,0 +1,9 @@
+function successHandler(data, message = "Successsss", status = 200) {
+  return {
+    data,
+    message,
+    status,
+  };
+}
+
+module.exports = successHandler;

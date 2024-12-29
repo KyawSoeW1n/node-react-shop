@@ -3,11 +3,13 @@ const orderRoute = express.Router();
 const protect = require("../middleware/Auth");
 const asyncHandler = require("express-async-handler");
 const Order = require("../models/Order");
+const mongoose = require('mongoose');
 
+const successHandler = require('../middleware/SuccessHandler');
 orderRoute.post(
     "/",
     protect,
-    asyncHandler(async (req, res) => {
+    asyncHandler(async (req, res, next) => {
         const {
             orderItems,
             shippingAddress,
@@ -17,17 +19,16 @@ orderRoute.post(
             totalPrice,
             price,
         } = req.body;
-        console.log("Order Items", orderItems);
 
         if (!req.body.orderItems) {
-            return res.status(400).json({
-                error: "Invalid request",
-            });
+            res.status(400);
+            next(new Error("Invalid request"));
+            return;
         }
 
         if (orderItems && orderItems.length === 0) {
             res.status(400);
-            throw new Error("no order items found");
+            next(new Error("No order items found"));
         } else {
             const order = new Order({
                 orderItems,
@@ -41,7 +42,7 @@ orderRoute.post(
             });
 
             const createdOrder = await order.save();
-            res.status(201).json(createdOrder);
+            res.status(201).json(successHandler(createdOrder));
         }
     })
 );
@@ -50,16 +51,41 @@ orderRoute.post(
 orderRoute.get(
     "/:id",
     protect,
-    asyncHandler(async (req, res) => {
+    asyncHandler(async (req, res, next) => {
+
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            res.status(404);
+            next(new Error("Order Not Found"));
+            return;
+        };
         const order = await Order.findById(req.params.id).populate(
             "user",
             "name email"
         );
+
+
         if (order) {
-            res.status(200).json(order);
+
+            const responseData = {
+                order_id: order._id,
+                shipping_address: order.shippingAddress,
+                payment_result: order.paymentResult,
+                order_items: order.orderItems,
+                payment_method: order.paymentMethod,
+                tax_price: order.taxPrice,
+                shipping_price: order.shippingPrice,
+                total_price: order.totalPrice,
+                is_paid: order.isPaid,
+                is_delivered: order.isDelivered,
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt,
+                paidAt: order.paidAt,
+            }
+
+            res.status(200).json(successHandler(responseData));
         } else {
             res.status(404);
-            throw new Error("Order Not Found");
+            next(new Error("Order Not Found"));
         }
     })
 );
@@ -68,14 +94,14 @@ orderRoute.get(
 orderRoute.get(
     "/",
     protect,
-    asyncHandler(async (req, res) => {
+    asyncHandler(async (req, res, next) => {
 
         const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
         if (orders) {
-            res.status(200).json(orders);
+            res.status(200).json(successHandler(orders));
         } else {
             res.status(404);
-            throw new Error("Orders Not Found");
+            next(new Error("Order List Error"));
         }
     })
 );
@@ -83,7 +109,7 @@ orderRoute.get(
 orderRoute.put(
     "/:id/payment",
     protect,
-    asyncHandler(async (req, res) => {
+    asyncHandler(async (req, res, next) => {
         const order = await Order.findById(req.params.id);
         if (order) {
             order.isPaid = true;
@@ -91,7 +117,7 @@ orderRoute.put(
 
             order.paymentResult = {
                 id: req.body.id,
-                status : req.body.status === 1 ? "Completed" : "Pending",
+                status: "Completed",
                 update_time: Date.now(),
             };
             const updatedOrder = await order.save();
@@ -99,7 +125,7 @@ orderRoute.put(
             res.status(200).json(updatedOrder);
         } else {
             res.status(404);
-            throw new Error("Order Not Found");
+            next(new Error("Order Not Found"));
         }
     })
 );

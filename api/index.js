@@ -11,6 +11,8 @@ const dotenv = require('dotenv');
 const productRoute = require('./routes/Product');
 const orderRoute = require('./routes/Order');
 
+const { errorHandler } = require("./middleware/ErrorMiddleware");
+
 
 
 dotenv.config();
@@ -33,3 +35,6 @@ app.use("/api/order", orderRoute);
 app.listen(PORT || 9000, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+app.use(errorHandler);

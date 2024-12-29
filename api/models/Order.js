@@ -26,7 +26,6 @@ const orderSchema = new mongoose.Schema(
         paymentResult: {
             ///id is  payment from paypal or stripe
             id: { type: String },
-            status: { type: String },
             updated_time: { type: String },
         },
         taxPrice: {
