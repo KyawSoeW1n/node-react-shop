@@ -12,14 +12,14 @@ userRoute.post(
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
-            res.json({
-                _id: user.id,
+            res.status(200).json(successHandler({
+                user_id: user.id,
                 name: user.name,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                is_admin: user.isAdmin,
                 token: generateToken(user._id),
                 createdAt: user.createdAt,
-            });
+            }));
         } else {
             res.status(401);
             next(new Error("Invalid Credentials"));
@@ -34,7 +34,7 @@ userRoute.post(
 //register route
 userRoute.post(
     "/",
-    AsyncHandler(async (req, res) => {
+    AsyncHandler(async (req, res, next) => {
         const { name, email, password } = req.body;
         const existUser = await User.findOne({ email });
         if (existUser) {
