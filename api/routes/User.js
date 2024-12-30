@@ -5,6 +5,28 @@ const User = require("../models/User");
 const generateToken = require("../tokenGenerator");
 const protect = require("../middleware/Auth");
 const successHandler = require('../middleware/SuccessHandler');
+const nodeMailer = require('nodemailer');
+const randomstring = require('randomstring');
+const OTP = require('../models/OTP');
+const bcrypt = require('bcryptjs');
+const transporter = nodeMailer.createTransport({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    auth: {
+        user: 'willis.ferry81@ethereal.email',
+        pass: 'NMAJhYRR9pnVfp8By7'
+    }
+});
+
+// Generate OTP
+function generateOTP() {
+    return randomstring.generate({
+        length: 6,
+        charset: 'numeric'
+    });
+}
+
+
 userRoute.post(
     "/login",
     AsyncHandler(async (req, res, next) => {
@@ -100,17 +122,70 @@ userRoute.put(
                 user.password = req.body.password
             }
             const updatedUser = await user.save();
-            res.json({
+
+            res.status(200).json(successHandler({
                 _id: updatedUser._id,
                 name: updatedUser.name,
                 email: updatedUser.email,
                 isAdmin: updatedUser.isAdmin,
-            });
-
+            }));
         } else {
             res.status(404);
-            throw new Error("USER NOT FOUND");
+            next(new Error("User not found"));
         }
+    })
+);
+
+//user reset passsword
+userRoute.post(
+    "/forget-password",
+    AsyncHandler(async (req, res, next) => {
+
+        const { email } = req.body;
+        const otp = generateOTP(); // Generate a 6-digit OTP
+
+
+        // Save OTP to the database
+        const otpEntry = new OTP({ email, otp });
+        await otpEntry.save();
+
+        const mailOptions = {
+            from: 'willis.ferry81@ethereal.email',
+            to: email,
+            subject: 'Your OTP',
+            html: `<p>Your OTP is: <strong>${otp}</strong></p>`,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+
+        console.log("Message sent: %s", info.messageId);
+
+        res.status(200).json(successHandler(true, 'OTP sent successfully'));
+    })
+);
+
+// Function to verify OTP and reset password
+userRoute.post(
+    "/reset-password",
+    AsyncHandler(async (req, res, next) => {
+        const { email, otp, newPassword } = req.body;
+        // Verify OTP
+        const otpEntry = await OTP.findOne({ email, otp });
+        if (!otpEntry) {
+            res.status(400);
+            return next(new Error("Invalid OTP"));
+        }
+
+        // Hash the new password (using bcrypt)
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update the user's password in the database (assuming you have a User model)
+        await User.updateOne({ email }, { password: hashedPassword });
+
+        // Delete the OTP entry after successful verification
+        await OTP.deleteOne({ email, otp });
+
+        res.status(200).json({ success: true, message: 'Password reset successfully' });
     })
 );
 
