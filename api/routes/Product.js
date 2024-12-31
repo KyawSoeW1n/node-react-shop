@@ -4,11 +4,22 @@ const asyncHandler = require("express-async-handler");
 const Product = require("../models/Product");
 
 const successHandler = require('../middleware/SuccessHandler');
-
 productRoute.get(
   "/",
   asyncHandler(async (req, res, next) => {
-    const products = await Product.find({});
+    const { search, sort, sortBy } = req.query;
+
+    // Create a filter object for search
+    const filter = search ? { name: { $regex: search, $options: 'i' } } : {};
+
+    // Create a sort object
+    let sortOption = {};
+    if (sort && sortBy) {
+      sortOption[sortBy] = sort === 'asc' ? 1 : -1;
+    }
+
+    const products = await Product.find(filter).sort(sortOption);
+
     res.status(200).json(successHandler(products));
   })
 );
