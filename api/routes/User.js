@@ -26,11 +26,42 @@ function generateOTP() {
     });
 }
 
+/**
+ * @swagger
+ * /api/user/login:
+ *   post:
+ *     summary: Login User
+ *     description: Login User with email and password.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: The user's email.
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 description: The user's password.
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Successful response with user data and token.
+ */
 
 userRoute.post(
     "/login",
     AsyncHandler(async (req, res, next) => {
         const { email, password } = req.body;
+        if (!email || !password) {
+            res.status(401);
+            next(new Error("Bad request"));
+            return;
+        }
+
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
@@ -58,6 +89,13 @@ userRoute.post(
     "/",
     AsyncHandler(async (req, res, next) => {
         const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            res.status(401);
+            next(new Error("Bad request"));
+            return;
+        }
+
         const existUser = await User.findOne({ email });
         if (existUser) {
             res.status(400);
@@ -142,6 +180,11 @@ userRoute.post(
     AsyncHandler(async (req, res, next) => {
 
         const { email } = req.body;
+        if (!email) {
+            res.status(401);
+            next(new Error("Bad request"));
+            return;
+        }
         const otp = generateOTP(); // Generate a 6-digit OTP
 
 
@@ -175,13 +218,13 @@ userRoute.post(
             res.status(400);
             return next(new Error("Invalid OTP"));
         }
-
+        console.log(otpEntry);
         // Hash the new password (using bcrypt)
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         // Update the user's password in the database (assuming you have a User model)
         await User.updateOne({ email }, { password: hashedPassword });
-
+        console.log('Password Updated');
         // Delete the OTP entry after successful verification
         await OTP.deleteOne({ email, otp });
 

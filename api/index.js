@@ -1,6 +1,5 @@
 const express = require('express');
 const app = express();
-const product = require('./data/Products');
 const mongoose = require('mongoose');
 
 const dbSeeder = require('./databaseSeeder');
@@ -13,7 +12,11 @@ const orderRoute = require('./routes/Order');
 
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 
+const swaggerUI = require("swagger-ui-express");
+const swaggerSpec = require("./swagger");
 
+// Serve Swagger documentation
+app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
 dotenv.config();
 const PORT = process.env.PORT;

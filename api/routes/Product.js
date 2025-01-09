@@ -5,6 +5,17 @@ const Product = require("../models/Product");
 
 const successHandler = require('../middleware/SuccessHandler');
 
+/**
+ * @swagger
+ * /api/product:
+ *   get:
+ *     summary: Get a list of products
+ *     description: Retrieve a list of products from the database.
+ *     responses:
+ *       200:
+ *         description: Successful response with a list of products.
+ */
+
 productRoute.get(
   "/",
   asyncHandler(async (req, res, next) => {
